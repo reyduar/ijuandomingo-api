@@ -1,0 +1,7 @@
+{
+  "name": "ijdomingo-api",
+  "description": "Create By Ivan Duarte (c)2017",
+  "repository": "https://github.com/ivanpy/ijdomingo-api.git",
+  "logo": "http://node-js-sample.herokuapp.com/node.svg",
+  "keywords": ["angular2", "express", "node"]
+}
