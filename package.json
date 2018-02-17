@@ -1,11 +1,12 @@
 {
   "name": "ijdomingo-api",
   "version": "1.0.0",
-  "description": "api restfull para instituto juandomingo ",
-  "author": "Ivan Duarte",
+  "description": "Node.js Rest API",
+  "author": "Ariel Duarte",
   "license": "MIT",
   "scripts": {
-    "start": "nodemon server.js",
+    "start": "set NODE_ENV=development&&nodemon server.js",
+    "start-prod": "set NODE_ENV=production&&nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -19,6 +20,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ivanpy/ijdomingo-api.git"
+    "url": "https://github.com/reyduar/ijuandomingo-api"
   }
 }
