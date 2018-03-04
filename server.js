@@ -6,8 +6,8 @@ var port = process.env.PORT || 1245;
 var common = require('./routers/common')
 var config = common.config();
 
-var serverDev = 'mongodb://admin:secret@ds143737.mlab.com:43737/springdb';
-var serverProd = 'mongodb://admin:password@ds111851.mlab.com:11851/bdjdomprod';
+//var serverDev = 'mongodb://admin:secret@ds143737.mlab.com:43737/springdb';
+//var serverProd = 'mongodb://admin:password@ds111851.mlab.com:11851/bdjdomprod';
 // MongoDb connection with mongoose
 mongoose.connect(config.mongodb_url, (err, res) => {
 	if(err){
