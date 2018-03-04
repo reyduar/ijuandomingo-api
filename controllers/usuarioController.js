@@ -1,21 +1,49 @@
 'use stritc'
-
+var bcrypt = require('bcrypt-nodejs');
 var Usuario = require('../models/usuario');
-
+var jwt = require('../services/jwt');
+var common = require('../routers/common')
+var config = common.config();
 
 function agregar (req, res){
 	var parametros = req.body;
-	var usuario = new Usuario();
-	usuario.username = parametros.username;
-	usuario.password = parametros.password;
-	usuario.role = parametros.role;
-	usuario.save((err, usuarioGuardado) => {
-		if(err){
-			res.status(500).send({message: "Error al guardar información del usuario"});
-		}else{
-			res.status(200).send({message: "Dato del usuario guardado", usuario: usuarioGuardado});
-		}
-	});
+	if (parametros.userkey == config.admin || parametros.userkey == config.user) {
+		var usuario = new Usuario();
+		usuario.username = parametros.username;
+		usuario.nombre = parametros.nombre;
+		usuario.apellido = parametros.apellido;
+		usuario.password = parametros.password;
+		usuario.role = parametros.userkey == config.admin ? 'ROLE_ADMIN' : parametros.userkey == config.user ? 'ROLE_USER' : 'ROLE_DEMO';
+
+		// encrypt password
+		bcrypt.hash(parametros.password, null, null, function (err, hash) {
+			usuario.password = hash;
+		});
+
+		Usuario.findOne({ username: usuario.username }, (err, result) => {
+			if (err) {
+				res.status(500).send({ message: "Error al verificar duplicados." });
+			} else {
+				if (!result) {
+					usuario.save((err, saved) => {
+						if (err) {
+							res.status(500).send({ message: "No se puede registrar el usuario, error en el servidor." });
+						} else {
+							if (!saved) {
+								res.status(404).send({ message: "El usuario no fue registrado, vuelva intentarlo." });
+							} else {
+								res.status(200).send({ message: "Usuario registrado con éxito.", usuario: saved });
+							}
+						}
+					});
+				} else {
+					res.status(409).send({ message: "No es posible registrar este nombre de usuario porque ya existe." });
+				}
+			}
+		});
+	} else {
+		res.status(400).send({ message: "La llave del registro es incorrecta." });
+	}
 }
 
 function editar (req, res){
@@ -95,11 +123,49 @@ function buscarPorId (req, res){
 	});
 }
 
+function login(req, res) {
+	var params = req.body;
+	var username = params.username;
+	var password = params.password;
+	if(params.password && params.username){
+		Usuario.findOne({username: username}, (err, user) => {
+            if(err){
+                res.status(500).send({message: "Error en el servidor al verificar el usuario."});
+            }else{
+                if(user){
+					bcrypt.compare(password, user.password, (err, check) => {
+						if (check) {
+							//check and generate token
+							if (params.gettoken) {
+								//token generated
+								res.status(200).send({ 
+									token: jwt.createToken(user)
+								 });	
+							} else {
+								res.status(200).send({ usuario: user });	
+							}
+							
+						} else {
+							res.status(404).send({message: "El usuario o la contraseña son incorrectas."});
+						}
+					});
+                    
+                }else{
+                    res.status(404).send({message: "No se encontraron datos del usuario."});
+                }
+            }
+        });
+	}else{
+		res.status(400).send({message: "Ingrese los datos solicitados para la autenticación."});
+	}
+}
+
 module.exports = {
 	agregar,
 	editar,
 	borrar,
 	listar,
 	buscarPorNombre,
-	buscarPorId
+	buscarPorId,
+	login
 }

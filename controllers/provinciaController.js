@@ -7,11 +7,22 @@ function agregar (req, res){
 	var parametros = req.body;
 	var provincia = new Provincia();
 	provincia.nombre = parametros.nombre;
-	provincia.save((err, provinciaGuardada) => {
-		if(err){
-			res.status(500).send({message: "Error al guardar la provincia"});
-		}else{
-			res.status(200).send({message: "Provincia guardada", provincia: provinciaGuardada});
+	Provincia.find({ nombre: provincia.nombre }).exec((err, existe) => {
+		if (err) {
+			console.log("Error al verificar si existen duplicados.");
+		} else {
+			console.log(existe);
+			if (existe.length == 0) {
+				provincia.save((err, provinciaGuardada) => {
+					if (err) {
+						res.status(500).send({ message: "Error al guardar la provincia." });
+					} else {
+						res.status(200).send({ message: "Provincia guardada exitosamente.", provincia: provinciaGuardada });
+					}
+				});
+			} else {
+				res.status(409).send({ message: "Esta provincia ya se encuentra ingresada." });
+			}
 		}
 	});
 }
@@ -21,9 +32,9 @@ function editar (req, res){
 	var parametros = req.body;
 	Provincia.findByIdAndUpdate(id, parametros, (err, provinciaEditada) => {
 		if(err){
-			res.status(500).send({message: "Error al editar la provincia", _id: id});
+			res.status(500).send({message: "Error al editar la provincia.", _id: id});
 		}else{
-			res.status(200).send({message: "Exito al editar la provincia", provincia: provinciaEditada});
+			res.status(200).send({message: "Provincia editado con éxito.", provincia: provinciaEditada});
 		}
 	});
 }
@@ -39,9 +50,9 @@ function borrar (req, res){
 		}else{
 			provinciaABorrar.remove(err => {
 				if(err){
-					res.status(500).send({message: "Error al borrar la provincia", _id: id});
+					res.status(500).send({message: "Error al borrar la provincia.", _id: id});
 				}else{
-					res.status(200).send({message: "Exito al borrar", provincia: provinciaABorrar});
+					res.status(200).send({message: "Provincia borrado con éxito.", provincia: provinciaABorrar});
 				}
 			});
 		}
@@ -56,7 +67,7 @@ function listar (req, res){
 	var sort = req.query.sort;
 	var query = {};
 	var options = {
-	  sort: { nombre: sort || 'desc' },
+	  sort: { nombre: sort || 'asc' },
 	  lean: false,
 	  page: page || 1, 
 	  limit: size || 50

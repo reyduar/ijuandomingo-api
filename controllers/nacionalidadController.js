@@ -8,11 +8,23 @@ function agregar (req, res){
 	var nacionalidad = new Nacionalidad();
 	nacionalidad.nombre = parametros.nombre;
 	nacionalidad.pais = parametros.pais;
-	nacionalidad.save((err, nacionalidadGuardado) => {
-		if(err){
-			res.status(500).send({message: "Error al guardar la nacionalidad"});
-		}else{
-			res.status(200).send({message: "Nacionalidad guardada", nacionalidad: nacionalidadGuardado});
+
+	Nacionalidad.find({ nombre: nacionalidad.nombre }).exec((err, existe) => {
+		if (err) {
+			console.log("Error al verificar si existen duplicados.");
+		} else {
+			console.log(existe);
+			if (existe.length == 0) {
+				nacionalidad.save((err, nacionalidadGuardado) => {
+					if(err){
+						res.status(500).send({message: "Error al guardar la nacionalidad"});
+					}else{
+						res.status(200).send({message: "Nacionalidad guardada", nacionalidad: nacionalidadGuardado});
+					}
+				});
+			} else {
+				res.status(409).send({ message: "Esta nacionalidad ya se encuentra ingresada." });
+			}
 		}
 	});
 }
@@ -56,7 +68,7 @@ function listar (req, res){
 	var sort = req.query.sort;
 	var query = {};
 	var options = {
-	  sort: { nombre: sort || 'desc' },
+	  sort: { pais: sort || 'asc' },
 	  lean: false,
 	  page: page || 1, 
 	  limit: size || 50

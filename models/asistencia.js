@@ -10,7 +10,9 @@ var AsistenciaSchema = Schema({
 	estado: String,
 	periodo: { type: Schema.Types.ObjectId, ref: 'Periodo' },
 	alumno: { type: Schema.Types.ObjectId, ref: 'Alumno' },
-	curso: { type: Schema.Types.ObjectId, ref: 'Curso' }
+	curso: { type: Schema.Types.ObjectId, ref: 'Curso' },
+	provincia: { type: Schema.Types.ObjectId, ref: 'Provincia' },
+	localidad: { type: Schema.Types.ObjectId, ref: 'Localidad' }
 });
 
 AsistenciaSchema.plugin(mongoosePaginate);

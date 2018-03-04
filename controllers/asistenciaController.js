@@ -11,13 +11,27 @@ function agregar (req, res){
 	asistencia.periodo = parametros.periodo._id;
 	asistencia.alumno = parametros.alumno._id;
 	asistencia.curso = parametros.curso._id;
-	asistencia.save((err, asistenciaGuardado) => {
-		if(err){
-			res.status(500).send({message: "Error al guardar asistencia"});
-		}else{
-			res.status(200).send({message: "Asistencia guardada", asistencia: asistenciaGuardado});
+	asistencia.provincia = parametros.provincia._id;
+	asistencia.localidad = parametros.localidad._id;
+
+	Asistencia.find({ localidad: asistencia.localidad, curso: asistencia.curso, periodo: asistencia.periodo, fecasis: asistencia.fecasis}).exec((err, existe) => {
+		if (err) {
+			console.log("Error al verificar si existen duplicados.");
+		} else {
+			console.log(existe);
+			if (existe.length == 0) {
+				asistencia.save((err, asistenciaGuardado) => {
+					if(err){
+						res.status(500).send({message: "Ocurrio un error cuando se estaba creando la lista de asistencia."});
+					}else{
+						res.status(200).send({message: "La lista de asistencia fue creada con éxito.", asistencia: asistenciaGuardado});
+					}
+				});
+			} else {
+				res.status(409).send({ message: "Ya existe una lista de asistencia para este dia con esos datos." });
+			}
 		}
-	});
+	});	
 }
 
 function editar (req, res){
@@ -25,9 +39,9 @@ function editar (req, res){
 	var parametros = req.body;
 	Asistencia.findByIdAndUpdate(id, parametros, (err, asistenciaEditado) => {
 		if(err){
-			res.status(500).send({message: "Error al editar asistencia", asistenciaId: id});
+			res.status(500).send({message: "Error al actualizar los datos de la lista de asistencia.", asistenciaId: id});
 		}else{
-			res.status(200).send({message: "Exito al editar asistencia", asistencia: asistenciaEditado});
+			res.status(200).send({message: "La lista fue actualizada con éxito.", asistencia: asistenciaEditado});
 		}
 	});
 }
@@ -36,16 +50,16 @@ function borrar (req, res){
 	var id = req.params.id;
 	Asistencia.findById(id, (err, asistenciaABorrar) => {
 		if(err){
-			res.status(500).send({message: "Error al encontrar la asistencia", asistenciaId: id});
+			res.status(500).send({message: "Error al buscar la lista de asistencia."});
 		}
 		if(!asistenciaABorrar){
-			res.status(404).send({message: "asistencia no encontrada"});
+			res.status(404).send({message: "La lista de asistencia no fue encontrada."});
 		}else{
 			asistenciaABorrar.remove(err => {
 				if(err){
-					res.status(500).send({message: "Error al borrar la asistencia", asistenciaId: id});
+					res.status(500).send({message: "Error al borrar la lista de asistencia"});
 				}else{
-					res.status(200).send({message: "Exito al borrar", asistencia: asistenciaABorrar});
+					res.status(200).send({message: "La lista de asistencia fue eliminada con éxito."});
 				}
 			});
 		}
@@ -54,24 +68,31 @@ function borrar (req, res){
 
 function listar (req, res){
 	var periodo = req.params.periodo;
+	var curso = req.query.curso;
+	var provincia = req.query.provincia;
+	var localidad = req.query.localidad;
 	var page = Number(req.query.page);
 	var size = Number(req.query.size);
 	var sort = req.query.sort;
-	var query = { periodo: periodo };
+	var query = { periodo: periodo, curso: curso,  provincia: provincia, localidad: localidad };
 	var options = {
-	  sort: { curso: sort || 'desc' },
-	  populate: [{ path: 'alumno', select: 'nombre apellido dni localidad' }, { path: 'curso' }],
+	  sort: { alumno: sort || 'asc' },
+	  populate: [
+		  { path: 'alumno', select: 'nombre apellido dni' }, 
+		  { path: 'curso' }, 
+		  { path: 'periodo' }, 
+		  { path: 'provincia' },
+		  { path: 'localidad' }],
 	  lean: false,
 	  page: page || 1, 
-	  limit: size || 50
+	  limit: size || 1000
 	};
-
 	Asistencia.paginate(query, options, function(err, asistencias) {
 		if(err){
-			res.status(500).send({message: "Error al listar asistencias"});
+			res.status(500).send({message: "Error al buscar la listar asistencia."});
 		}else{
 			if(!asistencias){
-				res.status(404).send({message: "Asistencias no encontradas"});
+				res.status(404).send({message: "Lista de asistencia no encontrada."});
 			}else{
 				res.status(200).send({asistencias: asistencias.docs});
 			}
@@ -133,24 +154,37 @@ function buscarPorAlumnoYCursoYFecha (req, res){
 	});
 }
 
-function buscarPorCursoYFecha (req, res){
-	var curso = req.params.curso;
-	var fecha = req.params.fecha;
-	Asistencia.find({ curso: curso._id, fecasis: fecha })
-	.populate({ path: 'alumno' })
-	.populate({ path: 'curso' })
-	.sort('alumno').exec((err, asistencias) => {
+function buscarPorFecha (req, res){
+	var periodo = req.params.periodo;
+	var curso = req.query.curso;
+	var provincia = req.query.provincia;
+	var localidad = req.query.localidad;
+	var fecha = req.query.fecha;
+	var page = Number(req.query.page);
+	var size = Number(req.query.size);
+	var sort = req.query.sort;
+	var query = { periodo: periodo, curso: curso,  provincia: provincia, localidad: localidad, fecasis: fecha };
+	var options = {
+	  sort: { alumno: sort || 'asc' },
+	  populate: [{ path: 'alumno', select: 'nombre apellido dni' }, { path: 'curso' }, { path: 'localidad' }, { path: 'provincia' }],
+	  lean: false,
+	  page: page || 1, 
+	  limit: size || 1000
+	};
+
+	Asistencia.paginate(query, options, function(err, asistencias) {
 		if(err){
-			res.status(500).send({message: "Error al encontrar asistencias"});
+			res.status(500).send({message: "Error al obtener la lista de asistencia"});
 		}else{
 			if(!asistencias){
-				res.status(404).send({message: "Asistencia no encontrada"});
+				res.status(404).send({message: "No existen datos para esta lista de asistencia"});
 			}else{
-				res.status(200).send({asistencias: asistencias});
+				res.status(200).send({asistencias: asistencias.docs});
 			}
 		}
 	});
 }
+
 
 module.exports = {
 	agregar,
@@ -159,5 +193,5 @@ module.exports = {
 	listar,
 	buscarPorId,
 	buscarPorAlumnoYCursoYFecha,
-	buscarPorCursoYFecha
+	buscarPorFecha
 }

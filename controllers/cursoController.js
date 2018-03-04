@@ -7,11 +7,23 @@ function agregar (req, res){
 	var parametros = req.body;
 	var curso = new Curso();
 	curso.nombre = parametros.nombre;
-	curso.save((err, cursoGuardado) => {
-		if(err){
-			res.status(500).send({message: "Error al guardar el curso"});
-		}else{
-			res.status(200).send({message: "Curso guardado", curso: cursoGuardado});
+
+	Curso.find({ nombre: curso.nombre }).exec((err, existe) => {
+		if (err) {
+			console.log("Error al verificar si existen duplicados.");
+		} else {
+			console.log(existe);
+			if (existe.length == 0) {
+				curso.save((err, cursoGuardado) => {
+					if(err){
+						res.status(500).send({message: "Error al guardar el curso."});
+					}else{
+						res.status(200).send({message: "Curso guardado exitosamente.", curso: cursoGuardado});
+					}
+				});
+			} else {
+				res.status(409).send({ message: "Este curso ya se encuentra ingresada." });
+			}
 		}
 	});
 }
@@ -21,9 +33,9 @@ function editar (req, res){
 	var parametros = req.body;
 	Curso.findByIdAndUpdate(id, parametros, (err, cursoEditado) => {
 		if(err){
-			res.status(500).send({message: "Error al editar curso", cursoId: id});
+			res.status(500).send({message: "Error al editar el curso.", cursoId: id});
 		}else{
-			res.status(200).send({message: "Exito al editar alumno", curso: cursoEditado});
+			res.status(200).send({message: "Curso editado con éxito.", curso: cursoEditado});
 		}
 	});
 }
@@ -39,9 +51,9 @@ function borrar (req, res){
 		}else{
 			cursoABorrar.remove(err => {
 				if(err){
-					res.status(500).send({message: "Error al borrar el curso", cursoId: id});
+					res.status(500).send({message: "Error al borrar el curso.", cursoId: id});
 				}else{
-					res.status(200).send({message: "Exito al borrar", curso: cursoABorrar});
+					res.status(200).send({message: "Curso borrado con éxito.", curso: cursoABorrar});
 				}
 			});
 		}

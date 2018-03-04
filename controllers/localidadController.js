@@ -8,13 +8,25 @@ function agregar (req, res){
 	var localidad = new Localidad();
 	localidad.nombre = parametros.nombre;
 	localidad.provincia = parametros.provincia._id;
-	localidad.save((err, localidadGuardada) => {
+	Localidad.find({nombre: localidad.nombre, provincia: localidad.provincia}).exec((err, existe) => {
 		if(err){
-			res.status(500).send({message: "Error al guardar la localidad"});
+			console.log("Error al verificar si existe la localidad.");
 		}else{
-			res.status(200).send({message: "Localidad guardada", localidad: localidadGuardada});
+			console.log(existe);
+			if(existe.length == 0){
+				localidad.save((err, localidadGuardada) => {
+					if(err){
+						res.status(500).send({message: "Error al guardar la localidad"});
+					}else{
+						res.status(200).send({message: "Localidad guardada exitosamente.", localidad: localidadGuardada});
+					}
+				});	
+			}else{
+				res.status(409).send({message: "Esta localidad existe en esta provincia."});
+			}
 		}
 	});
+
 }
 
 function editar (req, res){
@@ -42,7 +54,7 @@ function borrar (req, res){
 				if(err){
 					res.status(500).send({message: "Error al borrar la localidad", _id: id});
 				}else{
-					res.status(200).send({message: "Exito al borrar", localidad: localidadABorrar});
+					res.status(200).send({message: "Localidad borrada con éxito.", localidad: localidadABorrar});
 				}
 			});
 		}
@@ -93,6 +105,7 @@ function buscarPorId (req, res){
 function buscarPorProvincia (req, res){
 	var provincia = req.params.provincia;
 	Localidad.find({ provincia: provincia })
+	.sort('nombre')
 	.populate({ path: 'provincia' })
 	.exec((err, localidades) => {
 		if(err){
@@ -107,11 +120,41 @@ function buscarPorProvincia (req, res){
 	});
 }
 
+function buscarPorNombre (req, res){
+	var nombre = req.params.nombre;
+	Localidad.find({nombre: nombre}).exec((err, localidad) => {
+		if(err){
+			res.status(500).send({message: "Error al buscar la localidad"});
+		}else{
+			if(!localidad){
+				res.status(404).send({message: "No encontrado"});
+			}else{
+				res.status(200).send({localidad: localidad});
+			}
+		}
+	});
+}
+
+function verificarDuplicado (nombre, provincia){
+	Localidad.find({nombre: nombre, provincia: provincia}).exec((err, localidad) => {
+		if(err){
+			console.log("Error al verificar si existe la localidad");
+		}else{
+			if(!localidad){
+				existe = false;
+			}else{
+				existe = true;
+			}
+		}
+	});
+}
+
 module.exports = {
 	agregar,
 	editar,
 	borrar,
 	listar,
 	buscarPorId,
-	buscarPorProvincia
+	buscarPorProvincia,
+	buscarPorNombre
 }

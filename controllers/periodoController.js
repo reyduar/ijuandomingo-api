@@ -9,11 +9,23 @@ function agregar (req, res){
 	periodo.nombre = parametros.nombre;
 	periodo.descripcion = parametros.descripcion;
 	periodo.estado = parametros.estado;
-	periodo.save((err, periodoGuardado) => {
-		if(err){
-			res.status(500).send({message: "Error al guardar la periodo"});
-		}else{
-			res.status(200).send({message: "Periodo guardada", periodo: periodoGuardado});
+
+	Periodo.find({ nombre: periodo.nombre }).exec((err, existe) => {
+		if (err) {
+			console.log("Error al verificar si existen duplicados.");
+		} else {
+			console.log(existe);
+			if (existe.length == 0) {
+				periodo.save((err, periodoGuardado) => {
+					if(err){
+						res.status(500).send({message: "Error al guardar el período lectivo."});
+					}else{
+						res.status(200).send({message: "Período lectivo fue guardado exitosamente", periodo: periodoGuardado});
+					}
+				});
+			} else {
+				res.status(409).send({ message: "Este período lectivo ya se encuentra ingresada." });
+			}
 		}
 	});
 }
@@ -59,7 +71,7 @@ function listar (req, res){
 			if(!periodos){
 				res.status(404).send({message: "No encontrado"});
 			}else{
-				res.status(200).send({periodo: periodos});
+				res.status(200).send({periodos: periodos});
 			}
 		}
 	});

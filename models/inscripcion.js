@@ -11,7 +11,10 @@ var InscripcionSchema = Schema({
 	estado: Boolean,
 	periodo: { type: Schema.Types.ObjectId, ref: 'Periodo' },
 	alumno: { type: Schema.Types.ObjectId, ref: 'Alumno' },
-	curso: { type: Schema.Types.ObjectId, ref: 'Curso' }
+	curso: { type: Schema.Types.ObjectId, ref: 'Curso' },
+	provincia: { type: Schema.Types.ObjectId, ref: 'Provincia' },
+	localidad: { type: Schema.Types.ObjectId, ref: 'Localidad' }
+
 });
 
 InscripcionSchema.plugin(mongoosePaginate);

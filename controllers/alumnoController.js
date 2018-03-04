@@ -19,11 +19,22 @@ function agregar (req, res){
 	alumno.ocupacion = parametros.ocupacion;
 	alumno.localidad = parametros.localidad._id;
 	alumno.nacionalidad = parametros.nacionalidad._id;
-	alumno.save((err, alumnoGuardado) => {
+	Alumno.find({dni: alumno.dni }).exec((err, existe) => {
 		if(err){
-			res.status(500).send({message: "Error al guardar el alumno"});
+			res.status(500).send({message: "Error al verificar si existe el DNI."});
 		}else{
-			res.status(200).send({message: "alumno guardado", alumno: alumnoGuardado});
+			console.log(existe);
+			if(existe.length == 0){
+				alumno.save((err, alumnoGuardado) => {
+					if(err){
+						res.status(500).send({message: "Error al guardar los datos del alumno."});
+					}else{
+						res.status(200).send({message: "Los datos del alumno se guardaron exitosamente.", alumno: alumnoGuardado});
+					}
+				});
+			}else{
+				res.status(409).send({message: "El DNI de este alumno ya se encuentra ingresado."});
+			}
 		}
 	});
 }
@@ -35,7 +46,7 @@ function editar (req, res){
 		if(err){
 			res.status(500).send({message: "Error al editar alumno", _id: id});
 		}else{
-			res.status(200).send({message: "Exito al editar alumno", alumno: alumnoEditado});
+			res.status(200).send({message: "Alumno editado con éxito.", alumno: alumnoEditado});
 		}
 	});
 }
@@ -53,7 +64,7 @@ function borrar (req, res){
 				if(err){
 					res.status(500).send({message: "Error al borrar el alumno", _id: id});
 				}else{
-					res.status(200).send({message: "Exito al borrar", alumno: alumnoABorrar});
+					res.status(200).send({message: "Alumno borrado con éxito.", alumno: alumnoABorrar});
 				}
 			});
 		}
@@ -68,7 +79,7 @@ function listar (req, res){
 	var query = {};
 	var options = {
 	  sort: { nombre: sort || 'desc' },
-	  populate: [{ path: 'localidad', select: 'nombre' }, { path: 'nacionalidad', select: 'nombre' }],
+	  populate: [{ path: 'localidad' }, { path: 'nacionalidad', select: 'nombre' }],
 	  lean: false,
 	  page: page || 1, 
 	  limit: size || 50
@@ -90,14 +101,12 @@ function listar (req, res){
 function buscarPorDni (req, res){
 	var dni = req.params.dni;
 	Alumno.find({dni: dni})
-	.populate({ path: 'localidad', select: 'nombre' })
-	.populate({ path: 'nacionalidad', select: 'nombre' })
-	.exec((err, alumno) => {
+	.exec((err, alumnoDni) => {
 		if(err){
-			res.status(500).send({message: "Error al listar alumnos"});
+			res.status(500).send({message: "Error al buscar el DNI del alumno."});
 		}else{
 			if(!alumnoDni){
-				res.status(404).send({message: "Datos no encontrados"});
+				res.status(404).send({message: "No éxiste un alumno con este DNI."});
 			}else{
 				res.status(200).send({alumnoDni: alumnoDni});
 			}
@@ -108,8 +117,6 @@ function buscarPorDni (req, res){
 function buscarPorId (req, res){
 	var id = req.params.id;
 	Alumno.findOne({_id: id})
-	.populate({ path: 'localidad' })
-	.populate({ path: 'nacionalidad' })
 	.exec((err, alumno) => {
 		if(err){
 			res.status(500).send({message: "Error al obtener alumno por Id"});
